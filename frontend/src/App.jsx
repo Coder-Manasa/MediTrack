@@ -55,6 +55,7 @@ function initials(name = "Hospital Admin") {
 
 function App() {
   const [page, setPage] = useState("Overview");
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [patients, setPatients] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
@@ -136,7 +137,7 @@ function App() {
 
   const admitted = patients.filter(p => p.status !== "Discharged");
   const discharged = patients.filter(p => p.status === "Discharged");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, "0")}-${String(currentTime.getDate()).padStart(2, "0")}`;
   const admittedToday = patients.filter(p => p.admission_date === today).length;
 
   const wardStats = useMemo(() => OPTIONS.wards.map(ward => ({
@@ -339,7 +340,29 @@ function App() {
     return (
       <>
         <div className="welcome-row">
-          <div><div className="eyebrow">WEDNESDAY, {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }).toUpperCase()}</div><h1>Good afternoon, {profile.name.split(" ")[0]} <span>👋</span></h1><p>Here’s what’s happening across your hospital today.</p></div>
+          <div>
+            <div className="eyebrow">
+              {currentTime.toLocaleDateString("en-IN", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+                year: "numeric"
+              }).toUpperCase()}
+            </div>
+
+            <h1>
+              {currentTime.getHours() >= 5 && currentTime.getHours() < 12
+                ? "Good morning"
+                : currentTime.getHours() >= 12 && currentTime.getHours() < 17
+                ? "Good afternoon"
+                : currentTime.getHours() >= 17 && currentTime.getHours() < 21
+                ? "Good evening"
+                : "Good night"},
+              {" "}{profile.name.split(" ")[0]} <span>👋</span>
+            </h1>
+
+            <p>Here’s what’s happening across your hospital today.</p>
+        </div>
           <button className="primary-button" onClick={openCreate}><Plus size={18}/> Add patient</button>
         </div>
 
@@ -526,6 +549,13 @@ function App() {
       {toast && <div className="toast"><CheckCircle size={18}/>{toast}</div>}
     </div>
   );
+  useEffect(() => {
+  const timer = window.setInterval(() => {
+    setCurrentTime(new Date());
+  }, 60000);
+
+  return () => window.clearInterval(timer);
+  }, []);
 }
 
 function StatCard({ icon: Icon, label, value, note, tone }) {
